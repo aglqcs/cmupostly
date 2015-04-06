@@ -10,12 +10,19 @@ include "config.php";
  * @return handle to database connection
  */
 function db_connect($host, $port, $db, $user, $pw) {
+	$string = "host=contrib-postgres.club.cc.cmu.edu port=5432 dbname=contrib_shuoc user=shuoc password=1";
+	$conn = pg_connect($string);
+	if( !$conn ){
+		echo "error in connecting to database";
+	}
+	return $conn;
 }
 
 /*
  * Close database connection
  */ 
 function close_db_connection($dbh) {
+	pg_close($dbh);
 }
 
 /*
@@ -27,6 +34,19 @@ function close_db_connection($dbh) {
  * )
  */
 function login($dbh, $user, $pw) {
+	$get = "select userid from user_record where name = '$user' AND password = '$pw'";
+	$get_ret = pg_query($dbh,$get);
+	$arr = array(
+                "status" => 0,
+                "userID" => -1,
+        );
+	if( !$get_ret ){
+		return $arr;
+	}
+	$row = pg_fetch_row($get_ret);
+        $arr['status'] = 1;
+        $arr['userID'] = $row[0];
+	return $arr;
 }
 
 /*
@@ -38,6 +58,21 @@ function login($dbh, $user, $pw) {
  * )
  */
 function register($dbh, $user, $pw) {
+	$str = "insert into user_record(name,password) values ('$user','$pw');";
+	$result = pg_query($dbh,$str);
+	$arr = array(
+		"status" => 0,
+		"userID" => -1,
+	);
+	$get = "select userid from user_record where name = '$user' AND password = '$pw'";
+	$get_ret =  pg_query($dbh,$get);
+	if( !$get_ret || !$result ){
+		return $arr;
+	}
+	$row = pg_fetch_row($get_ret);
+	$arr['status'] = 1;
+	$arr['userID'] = $row[0];	
+	return $arr;
 }
 
 /*
@@ -48,6 +83,17 @@ function register($dbh, $user, $pw) {
  * )
  */
 function post_post($dbh, $title, $msg, $me) {
+	$arr = array(
+                "status" => 0,
+        );
+	$time = date("Y-m-d H:i:s");
+	$str = "insert into post(userid,post_time,title,body) values ('$me','$time','$title','$msg')";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+	if( !$result ){
+		return $arr;
+	}
+	$arr['status'] = 1;
+	return $arr;
 }
 
 

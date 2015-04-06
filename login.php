@@ -16,7 +16,7 @@ if(isset($_POST['username']) && isset($_POST['pw'])) {
 		session_login($res['userID']);
 		header("Location: ".$home."index.php");
 	} else {
-		$err_msg = "Invalid login hehehehehe";
+		$err_msg = "Invalid login";
 	}
 }
 
