@@ -168,7 +168,35 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
  * )
  */
 function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
-	
+	 $arr = array(
+                "status" => 0,
+                "posts" => array(
+                ),
+        );
+        if( $start == PHP_INT_MAX){
+                $start = date("Y-m-d H:i:s");
+        }
+        $str = "select postid, post.name, title, body, post_time
+                from post
+                where post_time < '$start'
+                        AND name = '$user'
+                order by post_time desc, name
+                limit $count;";
+	$result = pg_query($dbh, $str);
+        if ( !$result ){
+                return $arr;
+        }
+        while ($row = pg_fetch_row($result)) {
+                $unix = strtotime($row[4]);
+                $arr['posts'][] = array(        "pID" => $row[0],
+                                        "username" => $row[1],
+                                        "title" => $row[2],
+                                        "content" => $row[3],
+                                        "time" => $unix,
+                                );
+        }
+        $arr['status'] = 1;
+        return $arr;	
 }
 
 /*
@@ -201,6 +229,7 @@ function delete_post($dbh, $user, $pID) {
  * )
  */
 function like_post($dbh, $me, $pID) {
+	echo "like like like like like like<br>";
 	 $arr = array(
                 "status" => 0,
         );
@@ -224,6 +253,11 @@ function already_liked($dbh, $me, $pID) {
 	if( !$result ){
 		return false;
 	}
+	$row = pg_fetch_row($result);
+	$count = $row[0];
+	if( !$count ){
+		return false;
+	}	
 	return true;
 }
 
@@ -303,6 +337,19 @@ function user_search($dbh, $name) {
  * )
  */
 function get_num_likes($dbh, $pID) {
+	$arr = array(
+                "status" => 0,
+                "count" => 0,
+        );
+	$str = "select count(*) from like_record where postid = $pID;";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+	if( !$result ){
+		return $arr;
+	}
+	$row = pg_fetch_row($result);
+	$arr['count'] = $row[0];
+	$arr['status'] = 1;
+	return $arr;	
 }
 
 /*
@@ -314,6 +361,19 @@ function get_num_likes($dbh, $pID) {
  * )
  */
 function get_num_posts($dbh, $uID) {
+	$arr = array(
+                "status" => 0,
+                "count" => 0,
+        );
+	$str = "select count(*) from post where name = '$uID'";
+        $result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+	if( !$result ){
+                return $arr;
+        }
+        $row = pg_fetch_row($result);
+        $arr['count'] = $row[0];
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -325,6 +385,19 @@ function get_num_posts($dbh, $uID) {
  * )
  */
 function get_num_likes_of_user($dbh, $uID) {
+	$arr = array(
+                "status" => 0,
+                "count" => 0,
+        );
+        $str = "select count(*) from like_record where name = '$uID'";
+        $result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+        $row = pg_fetch_row($result);
+        $arr['count'] = $row[0];
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -337,6 +410,25 @@ function get_num_likes_of_user($dbh, $uID) {
  * )
  */
 function get_most_active_users($dbh, $count = 10) {
+	$arr = array(
+		"status" => 0,
+		"users" => array(
+		),
+	);
+	$str = "select name, count(*) as k
+		from post
+		group by name
+		order by k desc, name
+		";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+        while ($row = pg_fetch_row($result)) {
+                $arr['users'][] = trim($row[0]);
+	 }	
+	$arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -357,6 +449,36 @@ function get_most_active_users($dbh, $count = 10) {
  * )
  */
 function get_most_popular_posts($dbh, $count = 10, $from = 0) {
+	$arr = array(
+                "status" => 0,
+                "users" => array(
+                ),
+        );
+	$unix =  date('Y-m-d H:i:s',$from);
+	$str = "select post.postid,post.name, title,body, post_time
+			from post,like_record
+			where post_time > '$unix' AND post.postid = like_record.postid
+			group by post.postid            
+			order by count(*) desc
+			limit $count";
+// here if same amount of like, what's next sort parameter
+
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+        while ($row = pg_fetch_row($result)) {
+        	$temp = strtotime($row[4]);
+		$arr['posts'][] = array(        "pID" => $row[0],
+                                        "username" => $row[1],
+                                        "title" => $row[2],
+                                        "content" => $row[3],
+                                        "time" => $temp,
+                                );
+
+	}
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
