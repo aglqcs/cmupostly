@@ -34,7 +34,7 @@ function close_db_connection($dbh) {
  * )
  */
 function login($dbh, $user, $pw) {
-	$get = "select userid from user_record where name = '$user' AND password = '$pw'";
+	$get = "select name from user_record where name = '$user' AND password = '$pw'";
 	$get_ret = pg_query($dbh,$get);
 	$arr = array(
                 "status" => 0,
@@ -64,7 +64,7 @@ function register($dbh, $user, $pw) {
 		"status" => 0,
 		"userID" => -1,
 	);
-	$get = "select userid from user_record where name = '$user' AND password = '$pw'";
+	$get = "select name from user_record where name = '$user' AND password = '$pw'";
 	$get_ret =  pg_query($dbh,$get);
 	if( !$get_ret || !$result ){
 		return $arr;
@@ -86,14 +86,15 @@ function post_post($dbh, $title, $msg, $me) {
 	$arr = array(
                 "status" => 0,
         );
-	$time = date("Y-m-d H:i:s");
-	$str = "insert into post(userid,post_time,title,body) values ('$me','$time','$title','$msg')";
+	$now = date("Y-m-d H:i:s");
+	$str = "insert into post(name,post_time,title,body) values ('$me','$now','$title','$msg')";
 	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
 	if( !$result ){
 		return $arr;
 	}
 	$arr['status'] = 1;
 	return $arr;
+
 }
 
 
@@ -116,6 +117,37 @@ function post_post($dbh, $title, $msg, $me) {
  * )
  */
 function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
+	$arr = array(
+		"status" => 0,
+		"posts" => array(
+		),
+	);
+	if( $start == PHP_INT_MAX){
+		$start = date("Y-m-d H:i:s");
+	}
+	$str = "select postid, post.name, title, body, post_time
+		from user_record, post
+		where post_time < '$start'
+			AND post.name = user_record.name
+		order by post_time desc, name
+		limit $count;";
+//	$result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
+	/* if put die() will generate error */
+	$result = pg_query($dbh, $str);
+	if ( !$result ){
+		return $arr;
+	}
+	while ($row = pg_fetch_row($result)) {
+		$unix = strtotime($row[4]);
+		$arr['posts'][] = array(	"pID" => $row[0],
+					"username" => $row[1],
+					"title" => $row[2],
+					"content" => $row[3],
+					"time" => $unix,
+				);
+	}
+	$arr['status'] = 1;
+	return $arr;	 
 }
 
 /*
@@ -136,6 +168,7 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
  * )
  */
 function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
+	
 }
 
 /*
@@ -147,6 +180,17 @@ function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
  * )
  */
 function delete_post($dbh, $user, $pID) {
+	$arr = array(
+                "status" => 0,
+        );
+        $str = "delete from post 
+		where name = '$user' AND postid = $pID";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -157,6 +201,16 @@ function delete_post($dbh, $user, $pID) {
  * )
  */
 function like_post($dbh, $me, $pID) {
+	 $arr = array(
+                "status" => 0,
+        );
+        $str = "insert into like_record(postid, name) values ('$pID','$me')";
+        $result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -164,6 +218,13 @@ function like_post($dbh, $me, $pID) {
  * Return true if user $me has liked post $pID or false otherwise
  */
 function already_liked($dbh, $me, $pID) {
+	$str = " select * from like_record
+		 where name = '$me' AND postid = '$pID'";
+	$result = pg_query($dbh, $str);
+	if( !$result ){
+		return false;
+	}
+	return true;
 }
 
 /*
@@ -176,8 +237,31 @@ function already_liked($dbh, $me, $pID) {
  * )
  */
 function search($dbh, $key, $count = 50) {
+	$arr = array(
+                "status" => 0,
+                "posts" => array(),
+        );
+	$str = "select postid, name, title, body, post_time
+                from post
+                where body like '%$key%'
+                order by post_time desc, name
+                limit $count";
+	$result = pg_query($dbh, $str);
+	if( !$result ){
+		return $arr;
+	}
+	while ($row = pg_fetch_row($result)) {
+                $unix = strtotime($row[4]);
+                $arr['posts'][] = array(        "pID" => $row[0],
+                                        "username" => $row[1],
+                                        "title" => $row[2],
+                                        "content" => $row[3],
+                                        "time" => $unix,
+                                );
+        }
+        $arr['status'] = 1;
+        return $arr;
 }
-
 /*
  * Find all users whose username includes the string $name
  * Sort the users alphabetically (A-Z)
@@ -188,6 +272,25 @@ function search($dbh, $key, $count = 50) {
  * )
  */
 function user_search($dbh, $name) {
+	$arr = array(
+                "status" => 0,
+		"users" => array(),
+        );
+        $str = "select name
+		from user_record
+		where name like '%$name%'
+		order by name asc";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+              	  echo "debug(user_search): error<br>";
+		  return $arr;
+        }
+	 while ($row = pg_fetch_row($result)) {
+                $arr['users'][] = trim($row[0]);
+		/* I dont know why need a trim here */ 
+	}
+        $arr['status'] = 1;
+        return $arr;
 }
 
 

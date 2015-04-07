@@ -6,6 +6,7 @@ include "../functions.php";
 include "../private_functions.php";
 
 if(isset($_SESSION['auth']) && $_SESSION['auth'] == 1 ) {
+	echo "<br>bitch<br>";
 	$dbh = db_connect($MY_HOST, $MY_DB_PORT, $MY_DB, $DB_USER, $DB_PW);
 	$num = 10;
 	$start = PHP_INT_MAX;
