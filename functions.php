@@ -43,9 +43,8 @@ function login($dbh, $user, $pw) {
 	if( !$get_ret ){
 		return $arr;
 	}
-	$row = pg_fetch_row($get_ret);
         $arr['status'] = 1;
-        $arr['userID'] = $row[0];
+        $arr['userID'] = $user;
 	return $arr;
 }
 
@@ -64,14 +63,11 @@ function register($dbh, $user, $pw) {
 		"status" => 0,
 		"userID" => -1,
 	);
-	$get = "select name from user_record where name = '$user' AND password = '$pw'";
-	$get_ret =  pg_query($dbh,$get);
-	if( !$get_ret || !$result ){
+	if( !$result ){
 		return $arr;
 	}
-	$row = pg_fetch_row($get_ret);
 	$arr['status'] = 1;
-	$arr['userID'] = $row[0];	
+	$arr['userID'] = $user;	
 	return $arr;
 }
 
@@ -123,17 +119,19 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
 		),
 	);
 	if( $start == PHP_INT_MAX){
-		$start = date("Y-m-d H:i:s");
+		$unix = date("Y-m-d H:i:s");
+	}
+	else{
+		 $unix =  date('Y-m-d H:i:s',$start);
 	}
 	$str = "select postid, post.name, title, body, post_time
 		from user_record, post
-		where post_time < '$start'
+		where post_time < '$unix'
 			AND post.name = user_record.name
 		order by post_time desc, name
 		limit $count;";
-//	$result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
-	/* if put die() will generate error */
-	$result = pg_query($dbh, $str);
+	$result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
+//	$result = pg_query($dbh, $str);
 	if ( !$result ){
 		return $arr;
 	}
