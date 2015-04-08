@@ -504,6 +504,55 @@ function get_most_popular_posts($dbh, $count = 10, $from = 0) {
  * )
  */
 function get_recommended_posts($dbh, $count = 10, $user) {
+	$arr = array(
+                "status" => 0,
+                "users" => array(
+                ),
+        );
+	$str = " drop view if exists ref_$user;
+		drop view if exists liked_post_$user;
+		 create view liked_post_$user(postid) as ( select distinct postid 
+						   from like_record 
+						   where name in ( select distinct name 
+								   from like_record 
+								   where postid in ( select postid 
+										     from like_record 
+										     where name = '$user')
+								      AND name != '$user'
+								 ) 
+							AND postid not in ( select postid 
+									    from like_record 
+									    where name = '$user')
+						);
+		create view ref_$user(postid,count) as (
+				select like_record.postid, count(*)
+				from liked_post_$user, like_record
+				where liked_post_$user.postid = like_record.postid
+				group by like_record.postid
+				order by count(*) desc
+ 		);	
+		select post.postid, name,title,body,post_time
+		from post, ref_$user
+		where post.postid = ref_$user.postid 
+		order by ref_$user.count desc
+		limit $count;
+	     ";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+	if( !$result ){
+                return $arr;
+        }
+        while ($row = pg_fetch_row($result)) {
+                $temp = strtotime($row[4]);
+                $arr['posts'][] = array(        "pID" => $row[0],
+                                        "username" => $row[1],
+                                        "title" => $row[2],
+                                        "content" => $row[3],
+                                        "time" => $temp,
+                                );
+
+        }
+        $arr['status'] = 1;
+        return $arr;
 }
 
 /*
@@ -514,6 +563,18 @@ function get_recommended_posts($dbh, $count = 10, $user) {
  * )
  */
 function reset_database($dbh) {
+	$arr = array(
+		"status" => 0,
+	);
+	$str = "delete from like_record;
+		delete from post;
+		delete from user_record;";
+	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
+        if( !$result ){
+                return $arr;
+        }
+	$arr['status'] = 1;
+	return $arr;
 }
 
 ?>
