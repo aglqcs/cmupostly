@@ -137,7 +137,9 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
         }
 	while ($row = pg_fetch_row($result)) {
                 $unix = strtotime($row[4]);
-                $arr['posts'][] = array(        "pID" => $row[0],
+               // echo strlen($row[2]);
+	//	echo "<br>";
+		$arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
