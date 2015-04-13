@@ -82,7 +82,7 @@ function post_post($dbh, $title, $msg, $me) {
 	$arr = array(
                 "status" => 0,
         );
-	$now = date("Y-m-d H:i:s");
+	$now = time();
 	$str = "insert into post(name,post_time,title,body) values ('$me','$now','$title','$msg')";
 	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
 	if( !$result ){
@@ -118,16 +118,9 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
                 "posts" => array(
                 ),
         );
-        if( $start == PHP_INT_MAX){
-                $unix = date("Y-m-d H:i:s");
-        }
-        else{
-                 $unix =  date('Y-m-d H:i:s',$start);
-        }
-        $str = "select postid, post.name, title, body, post_time
-                from user_record, post
-                where post_time < '$unix'
-                        AND post.name = user_record.name
+        $str = "select postid, name, title, body, post_time
+                from post
+                where post_time < $start
                 order by post_time desc, name
                 limit $count;";
         $result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
@@ -136,14 +129,11 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
                 return $arr;
         }
 	while ($row = pg_fetch_row($result)) {
-                $unix = strtotime($row[4]);
-               // echo strlen($row[2]);
-	//	echo "<br>";
 		$arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
-                                        "time" => $unix,
+                                        "time" => $row[4],
                                 );
         }
         $arr['status'] = 1;
@@ -174,12 +164,9 @@ function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
                 "posts" => array(
                 ),
         );
-        if( $start == PHP_INT_MAX){
-                $start = date("Y-m-d H:i:s");
-        }
         $str = "select postid, post.name, title, body, post_time
                 from post
-                where post_time < '$start'
+                where post_time < $start
                         AND name = '$user'
                 order by post_time desc, name
                 limit $count;";
@@ -188,12 +175,11 @@ function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
                 return $arr;
         }
         while ($row = pg_fetch_row($result)) {
-                $unix = strtotime($row[4]);
                 $arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
-                                        "time" => $unix,
+                                        "time" => $row[4],
                                 );
         }
         $arr['status'] = 1;
@@ -285,12 +271,11 @@ function search($dbh, $key, $count = 50) {
 		return $arr;
 	}
 	while ($row = pg_fetch_row($result)) {
-                $unix = strtotime($row[4]);
                 $arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
-                                        "time" => $unix,
+                                        "time" => $row[4],
                                 );
         }
         $arr['status'] = 1;
@@ -453,12 +438,11 @@ function get_most_popular_posts($dbh, $count = 10, $from = 0) {
                 "users" => array(
                 ),
         );
-	$unix =  date('Y-m-d H:i:s',$from);
 	$str = "select post.postid,post.name, title,body, post_time
 			from post,like_record
-			where post_time > '$unix' AND post.postid = like_record.postid
+			where post_time > $from  AND post.postid = like_record.postid
 			group by post.postid            
-			order by count(*) desc
+			order by count(*) desc, post.name
 			limit $count";
 // here if same amount of like, what's next sort parameter
 
@@ -467,12 +451,11 @@ function get_most_popular_posts($dbh, $count = 10, $from = 0) {
                 return $arr;
         }
         while ($row = pg_fetch_row($result)) {
-        	$temp = strtotime($row[4]);
 		$arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
-                                        "time" => $temp,
+                                        "time" => $row[4],
                                 );
 
 	}
@@ -541,12 +524,11 @@ function get_recommended_posts($dbh, $count = 10, $user) {
                 return $arr;
         }
         while ($row = pg_fetch_row($result)) {
-                $temp = strtotime($row[4]);
                 $arr['posts'][] = array(        "pID" => $row[0],
                                         "username" => $row[1],
                                         "title" => $row[2],
                                         "content" => $row[3],
-                                        "time" => $temp,
+                                        "time" => $row[4],
                                 );
 
         }
