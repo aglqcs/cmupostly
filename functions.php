@@ -114,38 +114,39 @@ function post_post($dbh, $title, $msg, $me) {
  */
 function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
 	$arr = array(
-		"status" => 0,
-		"posts" => array(
-		),
-	);
-	if( $start == PHP_INT_MAX){
-		$unix = date("Y-m-d H:i:s");
-	}
-	else{
-		 $unix =  date('Y-m-d H:i:s',$start);
-	}
-	$str = "select postid, post.name, title, body, post_time
-		from user_record, post
-		where post_time < '$unix'
-			AND post.name = user_record.name
-		order by post_time desc, name
-		limit $count;";
-	$result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
-//	$result = pg_query($dbh, $str);
-	if ( !$result ){
-		return $arr;
-	}
+                "status" => 0,
+                "posts" => array(
+                ),
+        );
+        if( $start == PHP_INT_MAX){
+                $unix = date("Y-m-d H:i:s");
+        }
+        else{
+                 $unix =  date('Y-m-d H:i:s',$start);
+        }
+        $str = "select postid, post.name, title, body, post_time
+                from user_record, post
+                where post_time < '$unix'
+                        AND post.name = user_record.name
+                order by post_time desc, name
+                limit $count;";
+        $result = pg_query($dbh, $str)  or die(pg_last_error($dbh));
+
+        if ( !$result ){
+                return $arr;
+        }
 	while ($row = pg_fetch_row($result)) {
-		$unix = strtotime($row[4]);
-		$arr['posts'][] = array(	"pID" => $row[0],
-					"username" => $row[1],
-					"title" => $row[2],
-					"content" => $row[3],
-					"time" => $unix,
-				);
-	}
-	$arr['status'] = 1;
-	return $arr;	 
+                $unix = strtotime($row[4]);
+                $arr['posts'][] = array(        "pID" => $row[0],
+                                        "username" => $row[1],
+                                        "title" => $row[2],
+                                        "content" => $row[3],
+                                        "time" => $unix,
+                                );
+        }
+        $arr['status'] = 1;
+        return $arr;
+
 }
 
 /*
@@ -227,7 +228,6 @@ function delete_post($dbh, $user, $pID) {
  * )
  */
 function like_post($dbh, $me, $pID) {
-	echo "like like like like like like<br>";
 	 $arr = array(
                 "status" => 0,
         );
@@ -314,7 +314,6 @@ function user_search($dbh, $name) {
 		order by name asc";
 	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
         if( !$result ){
-              	  echo "debug(user_search): error<br>";
 		  return $arr;
         }
 	 while ($row = pg_fetch_row($result)) {
@@ -565,6 +564,7 @@ function reset_database($dbh) {
 		"status" => 0,
 	);
 	$str = "delete from like_record;
+		alter sequence post_postid_seq restart;
 		delete from post;
 		delete from user_record;";
 	$result = pg_query($dbh, $str) or die(pg_last_error($dbh));
