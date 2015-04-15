@@ -34,6 +34,8 @@ function close_db_connection($dbh) {
  * )
  */
 function login($dbh, $user, $pw) {
+	$user = pg_escape_string($user);
+	$pw = pg_escape_string($pw);
 	$get = "select name from user_record where name = '$user' AND password = '$pw'";
 	$get_ret = pg_query($dbh,$get);
 	$arr = array(
@@ -43,6 +45,12 @@ function login($dbh, $user, $pw) {
 	if( !$get_ret ){
 		return $arr;
 	}
+	$row = pg_fetch_row($get_ret);
+        $count = $row[0];
+        if( !$count ){
+                return $arr;
+        }
+
         $arr['status'] = 1;
         $arr['userID'] = $user;
 	return $arr;
@@ -57,6 +65,8 @@ function login($dbh, $user, $pw) {
  * )
  */
 function register($dbh, $user, $pw) {
+	$user = pg_escape_string($user);
+	$pw = pg_escape_string($pw);
 	$str = "insert into user_record(name,password) values ('$user','$pw');";
 	$result = pg_query($dbh,$str);
 	$arr = array(
@@ -79,6 +89,9 @@ function register($dbh, $user, $pw) {
  * )
  */
 function post_post($dbh, $title, $msg, $me) {
+	$title =pg_escape_string($title); 
+	$msg = pg_escape_string($msg);
+	$me = pg_escape_string($me);
 	$arr = array(
                 "status" => 0,
         );
@@ -113,6 +126,10 @@ function post_post($dbh, $title, $msg, $me) {
  * )
  */
 function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
+	$user = pg_escape_string($user);
+	$count = pg_escape_string($count);
+	$start = pg_escape_string($start);
+
 	$arr = array(
                 "status" => 0,
                 "posts" => array(
@@ -159,6 +176,9 @@ function get_timeline($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
  * )
  */
 function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
+	$user = pg_escape_string($user);
+	$count = pg_escape_string($count);
+	$start = pg_escape_string($start);
 	 $arr = array(
                 "status" => 0,
                 "posts" => array(
@@ -195,6 +215,8 @@ function get_user_posts($dbh, $user, $count = 10, $start = PHP_INT_MAX) {
  * )
  */
 function delete_post($dbh, $user, $pID) {
+	$user = pg_escape_string($user);
+	$pID = pg_escape_string($pID);
 	$arr = array(
                 "status" => 0,
         );
@@ -216,6 +238,8 @@ function delete_post($dbh, $user, $pID) {
  * )
  */
 function like_post($dbh, $me, $pID) {
+	$me = pg_escape_string($me);
+	$pID = pg_escape_string($pID);
 	 $arr = array(
                 "status" => 0,
         );
@@ -233,6 +257,8 @@ function like_post($dbh, $me, $pID) {
  * Return true if user $me has liked post $pID or false otherwise
  */
 function already_liked($dbh, $me, $pID) {
+	$me = pg_escape_string($me);
+        $pID = pg_escape_string($pID);
 	$str = " select * from like_record
 		 where name = '$me' AND postid = '$pID'";
 	$result = pg_query($dbh, $str);
@@ -257,6 +283,8 @@ function already_liked($dbh, $me, $pID) {
  * )
  */
 function search($dbh, $key, $count = 50) {
+	$key = pg_escape_string($key);
+	$count = pg_escape_string($count);
 	$arr = array(
                 "status" => 0,
                 "posts" => array(),
@@ -291,6 +319,7 @@ function search($dbh, $key, $count = 50) {
  * )
  */
 function user_search($dbh, $name) {
+	$name = pg_escape_string($name);
 	$arr = array(
                 "status" => 0,
 		"users" => array(),
@@ -321,6 +350,7 @@ function user_search($dbh, $name) {
  * )
  */
 function get_num_likes($dbh, $pID) {
+	$pID = pg_escape_string($pID);
 	$arr = array(
                 "status" => 0,
                 "count" => 0,
@@ -345,6 +375,7 @@ function get_num_likes($dbh, $pID) {
  * )
  */
 function get_num_posts($dbh, $uID) {
+	$uID = pg_escape_string($uID);
 	$arr = array(
                 "status" => 0,
                 "count" => 0,
@@ -369,6 +400,7 @@ function get_num_posts($dbh, $uID) {
  * )
  */
 function get_num_likes_of_user($dbh, $uID) {
+	$uID = pg_escape_string($uID);
 	$arr = array(
                 "status" => 0,
                 "count" => 0,
@@ -394,6 +426,7 @@ function get_num_likes_of_user($dbh, $uID) {
  * )
  */
 function get_most_active_users($dbh, $count = 10) {
+	$count = pg_escape_string($count);
 	$arr = array(
 		"status" => 0,
 		"users" => array(
@@ -433,6 +466,8 @@ function get_most_active_users($dbh, $count = 10) {
  * )
  */
 function get_most_popular_posts($dbh, $count = 10, $from = 0) {
+	$count = pg_escape_string($count);
+	$from = pg_escape_String($from);
 	$arr = array(
                 "status" => 0,
                 "users" => array(
@@ -486,6 +521,8 @@ function get_most_popular_posts($dbh, $count = 10, $from = 0) {
  * )
  */
 function get_recommended_posts($dbh, $count = 10, $user) {
+	$count = pg_escape_string($count);
+	$user = pg_escape_string($user);
 	$arr = array(
                 "status" => 0,
                 "users" => array(
